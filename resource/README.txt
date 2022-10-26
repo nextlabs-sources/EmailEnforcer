@@ -1,0 +1,1 @@
+Entitlement Manager for Microsoft SharePoint v{MAJOR.VERSION}.{MINOR.VERSION}.{MAINTENANCE.VERSION}.{PATCH.VERSION} ({BUILD})

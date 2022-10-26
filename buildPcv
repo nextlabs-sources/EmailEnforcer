@@ -1,0 +1,74 @@
+#!/bin/bash
+#
+# DESCRIPTION
+#	Invoke PCV build
+#
+# USAGE:
+#	Steps to invoke this script.
+#		export NLEXTERNALDIR=<path>
+#		export BUILD_NUMBER=<#>
+#		source setEnv
+#		./buildPcv
+#
+# HUDSON BUILD:
+#	cd $WORKSPACE
+#	export NLEXTERNALDIR=c:/hudson/jobs/external_latest/workspace
+#	source setEnv
+#	./buildPcv
+#
+# Build Options:
+#	make -f build/Makefile.compile || exit $?
+#	make -f build/Makefile.compile compile install || exit $?
+#
+# Publish Options:
+#	make -f build/Makefile.publish TYPE=pcv || exit $?
+#	make -f build/Makefile.publish TYPE=pcv spe archive || exit $
+
+
+LOG_FILE=buildPcv.log
+BUILD_MANIFEST_FILE=build.manifest
+
+(
+set -x
+# Extract Perforce Workspace and Hudson info (only if running on Hudson)
+if [ "X${JENKINS_HOME}" != "X" -a -f ${JENKINS_HOME}/jobs/${JOB_NAME}/config.xml ]; then
+	build/getGitWorkspaceInfo.pl ${JENKINS_HOME}/jobs/${JOB_NAME}/config.xml
+fi
+
+# Prepare environment
+./configure --type=pcv_smdc || exit $?
+source build.config
+
+# Compile code
+#make -f Common/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+make -f RouteAgent/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+
+# make install package
+make -f install/Scripts/Makefile ${MAKE_INSTALLFLAGS} VERSION_BUILD_SHORT=${VERSION_BUILD_SHORT} || exit $?
+
+# Publish packages and artifacts to BODA only if PUBLISH_TO_BODA environment variable is set
+if [ "X${PUBLISH_TO_BODA}" = "XYes" -o "X${PUBLISH_TO_BODA}" = "Xyes" -o "X${PUBLISH_TO_BODA}" = "XYES" -o "X${PUBLISH_TO_BODA}" = "X1" ]
+then
+	# Publish intstallers and artifacts
+	make -f build/Makefile.publish TYPE=pcv || exit $?
+fi
+
+# Create and publish build manifest
+build/createBuildManifest.pl $LOG_FILE > $BUILD_MANIFEST_FILE || exit $?
+
+# Publish packages and artifacts to BODA only if PUBLISH_TO_BODA environment variable is set
+if [ "X${PUBLISH_TO_BODA}" = "XYes" -o "X${PUBLISH_TO_BODA}" = "Xyes" -o "X${PUBLISH_TO_BODA}" = "XYES" -o "X${PUBLISH_TO_BODA}" = "X1" ]
+then
+	make -f build/Makefile.publish TYPE=pcv manifest || exit $?
+fi
+
+set +x
+
+echo
+echo
+echo "####################### BUILD MANIFEST CONTENTS ########################"
+cat ${WORKSPACE}/${BUILD_MANIFEST_FILE}
+echo "########################################################################"
+) 2>&1 | tee $LOG_FILE
+
+exit ${PIPESTATUS[0]}

@@ -1,0 +1,117 @@
+#!/bin/bash
+#
+# DESCRIPTION
+#	Invoke release build
+#
+# USAGE:
+#	Steps to invoke this script.
+#		export NLEXTERNALDIR=<path>
+#		export BUILD_NUMBER=<#>
+#		source setEnv
+#		./buildRelease
+#
+# HUDSON BUILD:
+#	cd $WORKSPACE
+#	export NLEXTERNALDIR=c:/hudson/jobs/external_latest/workspace
+#	source setEnv
+#	./buildRelease
+#
+# Build Options:
+#	make -f build/Makefile.compile || exit $?
+#	make -f build/Makefile.compile compile install || exit $?
+#
+# Publish Options:
+#	make -f build/Makefile.publish TYPE=release || exit $?
+#	make -f build/Makefile.publish TYPE=release spe archive || exit $
+
+export VERSION_MAJOR_EE=2021
+export VERSION_MINOR_EE=10
+
+LOG_FILE=buildRelease.log
+BUILD_MANIFEST_FILE=build.manifest
+
+(
+set -x
+# Extract Perforce Workspace and Hudson info (only if running on Hudson)
+if [ "X${JENKINS_HOME}" != "X" -a -f ${JENKINS_HOME}/jobs/${JOB_NAME}/config.xml ]; then
+	build/getGitWorkspaceInfo.pl ${JENKINS_HOME}/jobs/${JOB_NAME}/config.xml
+fi
+
+# Prepare environment
+./configure --type=release || exit $?
+export MSENFORCECOMMON=W:/
+source build.config
+
+#copy sdkwrapper from MSEnforcerCommon
+cp -pfr ${MSENFORCECOMMON}/bin/${BUILDTYPE}_win_x64/SDKWrapperLib.dll RouteAgent/SDKWrapperLib.dll
+
+# Compile code
+#make -f Common/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+make -f CSDiagnose/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+make -f CSCommon/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+make -f RouteAgent/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+make -f diagtool/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+make -f TDFFileAnalyser/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+make -f SFBEnforcerPlugin/Makefile TARGETENVARCH=x64 BUILDTYPE=release || exit $?
+
+#copy rms java sdk
+mkdir ${NLBUILDROOT}/bin/rmsjavasdk
+cp -pfr ${MSENFORCECOMMON}/prod/rms_javasdk/RMSERVERSDK-10.7-0206-201904040111-build/lib/ ${NLBUILDROOT}/bin/rmsjavasdk/
+
+#copy sdkwrapper.dll from msenforcercommon
+cp -pfr ${MSENFORCECOMMON}/bin/${BUILDTYPE}_win_x64/SDKWrapper.dll ${NLBUILDROOT}/bin/${BUILDTYPE}_win_x64/SDKWrapper.dll
+
+cd $NLBUILDROOT
+
+# make plugin package
+export PLUGIN_PACKAGE_FOLDER=${NLBUILDROOT}/SFBEnforcerPlugin/PluginInstallPackage/
+export PLUGIN_SOURCE_FOLDER=${NLBUILDROOT}/SFBEnforcerPlugin/bin/x64/${BUILDTYPE}
+echo PLUGIN_PACKAGE_FOLDER=${PLUGIN_PACKAGE_FOLDER}
+echo PLUGIN_SOURCE_FOLDER=${PLUGIN_SOURCE_FOLDER}
+
+mkdir -p ${PLUGIN_PACKAGE_FOLDER}/DLL
+cp -pfr ${PLUGIN_SOURCE_FOLDER}/*.dll ${PLUGIN_PACKAGE_FOLDER}/DLL/
+
+mkdir ${PLUGIN_PACKAGE_FOLDER}/Config
+cp -pfr ${PLUGIN_SOURCE_FOLDER}/Config/*.xml ${PLUGIN_PACKAGE_FOLDER}/Config/
+
+cp -pfr ${PLUGIN_SOURCE_FOLDER}/Scripts/*.ps1 ${PLUGIN_PACKAGE_FOLDER}/
+
+mkdir ${PLUGIN_PACKAGE_FOLDER}/Jar
+cp -pfr ${NLBUILDROOT}/thirdpart/PCJSONParserPlugin/*.* ${PLUGIN_PACKAGE_FOLDER}/Jar/
+
+mkdir -p ${NLBUILDROOT}/bin/installer
+cd ${PLUGIN_PACKAGE_FOLDER}
+zip -r ${NLBUILDROOT}/bin/installer/SFBEnforcerPluginIntaller-${VERSION_MAJOR_EE}.${VERSION_MINOR_EE}-${VERSION_BUILD_SHORT}.zip *
+
+cd ${NLBUILDROOT}
+
+# make install package
+make -f install/Scripts/Makefile ${MAKE_INSTALLFLAGS} VERSION_BUILD_SHORT=${VERSION_BUILD_SHORT} || exit $?
+
+# Publish packages and artifacts to BODA only if PUBLISH_TO_BODA environment variable is set
+if [ "X${PUBLISH_TO_BODA}" = "XYes" -o "X${PUBLISH_TO_BODA}" = "Xyes" -o "X${PUBLISH_TO_BODA}" = "XYES" -o "X${PUBLISH_TO_BODA}" = "X1" ]
+then
+	# Publish intstallers and artifacts
+	make -f build/Makefile.publish TYPE=release || exit $?
+fi
+
+# Create and publish build manifest
+build/createBuildManifest.pl $LOG_FILE > $BUILD_MANIFEST_FILE || exit $?
+
+# Publish build manifest to BODA only if PUBLISH_TO_BODA environment variable is set
+if [ "X${PUBLISH_TO_BODA}" = "XYes" -o "X${PUBLISH_TO_BODA}" = "Xyes" -o "X${PUBLISH_TO_BODA}" = "XYES" -o "X${PUBLISH_TO_BODA}" = "X1" ]
+then
+	make -f build/Makefile.publish TYPE=release manifest || exit $?
+fi
+
+set +x
+
+echo
+echo
+echo "####################### BUILD MANIFEST CONTENTS ########################"
+cat ${WORKSPACE}/${BUILD_MANIFEST_FILE}
+echo "########################################################################"
+) 2>&1 | tee $LOG_FILE
+
+exit ${PIPESTATUS[0]}

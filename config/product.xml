@@ -1,0 +1,122 @@
+<Obligation>
+      <DisplayName>Exchange Normal File Tagging</DisplayName>
+      <RunAt>PEP</RunAt>
+      <Name>SP_File_Tag</Name>
+      <Arguments>  
+		<Argument usereditable="true"> 
+          <Name>Tag Name</Name>
+        </Argument> 
+        <Argument usereditable="true">
+			<Name>Tag Value</Name>
+		</Argument>
+      </Arguments>
+    </Obligation>
+	
+	<Obligation>
+      <DisplayName>Append Message</DisplayName>
+      <RunAt>PEP</RunAt>
+      <Name>APPEND_MESSAGE</Name>
+      <Arguments>
+      <Argument usereditable="false">
+          <Name>Append position</Name>
+		  <Value default="true">Prefix</Value>
+          <Value>Suffix</Value>
+      </Argument>
+	  <Argument usereditable="false">
+          <Name>Append parts</Name>
+		  <Value default="true">Email Body</Value>
+          <Value>Email Subject</Value>
+      </Argument>
+	  <Argument usereditable="true">
+      <Name>Append Message</Name>
+      </Argument>
+      </Arguments>
+     </Obligation>
+	 
+	 <Obligation>
+	<DisplayName>Integrated Rights Management</DisplayName> 
+	<RunAt>PEP</RunAt> 
+	<Name>SPRMS</Name> 
+	<Arguments>
+		<Argument usereditable="false">
+			<Name>Encryption</Name> 
+			<Value default="true">Yes</Value>
+			<Value>No</Value>
+		</Argument>
+		<Argument usereditable="false">
+			<Name>Tagging</Name> 
+			<Value>User-Defined</Value>
+			<Value default="true">All-Column</Value>
+			<Value>Specific-Column</Value>
+			<Value>System-Column</Value>
+		</Argument>
+		<Argument usereditable="true">
+			<Name>Name</Name>
+		</Argument>
+		<Argument usereditable="true">
+			<Name>Value</Name>
+		</Argument>
+		<Argument usereditable="false">
+			<Name>Mode</Name>
+			<Value default="true">Overwrite</Value>
+			<Value>Append</Value>
+		</Argument>
+	</Arguments>
+	</Obligation>
+	
+	<Obligation>
+	<DisplayName>Exchange Email Notification</DisplayName>
+	<RunAt>PEP</RunAt>
+	<Name>EXCHANGE_EMAIL_NOTIFICATION</Name> 
+	<Arguments>
+		 <Argument usereditable="false">
+		 <Name>Target</Name>
+		 <Value default="true">Sender</Value>
+		 <Value>Recipients</Value>
+		 <Value>Both</Value>
+		 </Argument>
+		 <Argument usereditable="false">
+		 <Name>AttachOrginalEmail</Name>
+		 <Value default="true">No</Value>
+		 <Value>Yes</Value>
+		 </Argument>
+           <Argument usereditable="true"> 
+                  <Name>Subject</Name> 
+           </Argument>
+           <Argument usereditable="true"> 
+                    <Name>Body</Name> 
+           </Argument>
+	</Arguments>
+	</Obligation>
+	
+	<Obligation>
+      <DisplayName>Exchange NDR</DisplayName>
+      <RunAt>PEP</RunAt>
+      <Name>EXCHANGE_NDR</Name>
+      <Arguments>  
+		<Argument usereditable="true"> 
+          <Name>Error Code</Name>
+        </Argument> 
+        <Argument usereditable="true">
+			<Name>Error Message</Name>
+		</Argument>
+      </Arguments>
+    </Obligation>
+    </Obligations>
+    
+    <ActionList>
+	<Action>
+            <Name>INBOUND</Name>
+            <DisplayName>Inbound</DisplayName>
+            <ShortName>IB</ShortName>
+            <Category>Communication</Category>
+        </Action>
+
+	<Action>
+            <Name>OUTBOUND</Name>
+            <DisplayName>Outbound</DisplayName>
+            <ShortName>OB</ShortName>
+            <Category>Communication</Category>
+        </Action>
+
+    </ActionList>

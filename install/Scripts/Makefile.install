@@ -1,0 +1,197 @@
+# Common make file for building installers
+#
+# IsCmdBld.exe commandline options:
+#	-a <product configuration>
+#	-b Output directory
+#	-n								No compile
+#	-p <ISM file>
+#	-q3                             Only compile setup.rul
+#	-r <release name>
+#	-x								Stop on error
+#	-y <product version>
+
+
+#
+# Prepare environment
+#
+
+CURRENT_MKFILE_PATH    := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_MKFILE_DIRPATH := $(dir $(CURRENT_MKFILE_PATH))
+
+ifeq ($(ProgramW6432), )
+	ENV_OS=x86
+	PROGRAM_FILES_X86=C:/Program Files
+else
+	ENV_OS=x64
+	PROGRAM_FILES_X86=C:/Program Files (x86)
+endif
+
+PROGRAM_FILES_X86_DOS=$(subst /,\,$(PROGRAM_FILES_X86))
+
+PERL=/usr/bin/perl
+ISCMDBLD=$(PROGRAM_FILES_X86)/InstallShield/2014 SAB/System/IsCmdBld.exe
+SIGNTOOL_OFFICIAL_TOOL=$(PROGRAM_FILES_X86)/Windows Kits/8.0/bin/x64/signtool.exe
+SIGNTOOL_OFFICIAL_ARGS=sign /ac c:/release/bin/DigiCertAssuredIDRootCA.cer /f c:/release/bin/NextLabs.pfx /p IiVf1itvOrqJ /n "NextLabs Inc." /fd sha256 /tr http://timestamp.digicert.com
+SIGNTOOL_OFFICIAL='$(SIGNTOOL_OFFICIAL_TOOL)' $(SIGNTOOL_OFFICIAL_ARGS)
+
+OFFICIALCERT=0
+VERSION_STR=$(VERSION_MAJOR_EE).$(VERSION_MINOR_EE)
+VERSION_BUILD_SHORT=$(VERSION_BUILD_SHORT)
+
+INSTALL_DIR=$(NLBUILDROOT)/install
+SCRIPT_DIR=$(INSTALL_DIR)/Scripts
+INSTALL_BUILD_DIR=$(INSTALL_DIR)/build
+ASSEMBLY_DIR=$(INSTALL_BUILD_DIR)/data
+OUTPUT_DIR=$(INSTALL_BUILD_DIR)/output
+PACKAGE64_DIR=$(INSTALL_BUILD_DIR)/package64
+PACKAGE_FILE64=$(basename $(MSI_FILE64))-$(VERSION_STR)-$(VERSION_BUILD_SHORT)-$(shell date +"%Y%m%d%H%M").zip
+PUBLISH_DIR=$(NLBUILDROOT)/bin/installer
+ARCHIVE_FILE64:=$(basename $(MSI_FILE64))-$(VERSION_STR)-$(VERSION_BUILD_SHORT)-$(shell date +"%Y%m%d%H%M")-arch.zip
+ARCHIVE_DIR=$(NLBUILDROOT)/bin/archive
+BUILD_DIR=$(subst /,\,$(ASSEMBLY_DIR))
+DEPLOY_DIR=$(subst /,\,$(OUTPUT_DIR))
+ISM_FILE_DIR=$(SCRIPT_DIR)/$(PRODUCT_DIR_NAME)
+
+EETEMPDIR := $(shell mktemp -d)
+
+TARGETS=
+
+ifneq ($(ISM_PRODUCT_CONFIG64), )
+	TARGETS+= installer64
+endif
+
+
+#
+# Print environment
+#
+
+$(info -----------------------------------------------------------------------------)
+$(info BUILDTYPE                   = $(BUILDTYPE))
+$(info VERSION_BUILD               = $(VERSION_BUILD))
+$(info VERSION_BUILD_SHORT         = $(VERSION_BUILD_SHORT))
+$(info BUILD_NUMBER                = $(BUILD_NUMBER))
+$(info OFFICIALCERT                = $(OFFICIALCERT))
+$(info Product directory name      = $(PRODUCT_DIR_NAME))
+$(info Packaging list              = $(PACKAGE_LIST))
+$(info Install directory           = $(INSTALL_DIR))
+$(info Assembly directory          = $(ASSEMBLY_DIR))
+$(info Output directory            = $(OUTPUT_DIR))
+$(info Package directory (64-bit)  = $(PACKAGE64_DIR))
+$(info Package file (64-bit)       = $(PACKAGE_FILE64))
+$(info Publish directory           = $(PUBLISH_DIR))
+$(info Archive file (64-bit)       = $(ARCHIVE_FILE64))
+$(info Archive directory           = $(ARCHIVE_DIR))
+$(info Current OS                  = $(ENV_OS))
+$(info Program files (x86)         = $(PROGRAM_FILES_X86))
+$(info Program files (x86) DOS     = $(PROGRAM_FILES_X86_DOS))
+$(info ISM_TEMPLATE_FILE_NAME_X86  = $(ISM_TEMPLATE_FILE_NAME_X86))
+$(info ISM_TEMPLATE_FILE_NAME_X64  = $(ISM_TEMPLATE_FILE_NAME_X64))
+$(info ISM release                 = $(ISM_RELEASE))
+$(info ISM product config (64-bit) = $(ISM_PRODUCT_CONFIG64))
+$(info ISM output directory        = $(DEPLOY_DIR))
+$(info -----------------------------------------------------------------------------)
+
+
+#
+# Targets
+#
+
+.PHONY: all
+all:$(TARGETS) publish archive
+.PHONY: assembly
+assembly:
+	@echo "INFO: Prepare assembly"
+	rm -rf $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/ ; mkdir -p $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/
+	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+#	unzip -o $(XLIB_DOCUMENTCONTROLSERVER_INSTALL_ZIP_FILE) 'install/rms/build/data*' -d $(EETEMPDIR)
+#	cd $(EETEMPDIR)/install/rms/build/data/ ;  tar cf - . | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer ; tar xf - )
+#	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+#	unzip -o $(XLIB_FATE_800_INSTALL_ZIP_FILE) 'install/KMService/build/data*' -d $(EETEMPDIR)
+#	cd $(EETEMPDIR)/install/KMService/build/data ; tar cf - . | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer ; tar xf - )
+#	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+	unzip -o $(XLIB_FATE_800_INSTALL_ZIP_FILE) 'install/pc/build/data*' -d $(EETEMPDIR)
+	cd $(EETEMPDIR)/install/pc/build/data/ ;  tar cf - . | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer ; tar xf - )
+	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+	unzip -o $(XLIB_DESTINY_803_INSTALL_ZIP_FILE) '*' -d $(EETEMPDIR)
+	mkdir -p $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java
+	cd $(EETEMPDIR)/ ;  tar cf - . | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java ; tar xf - )
+	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+	unzip -o $(XLIB_FATE_830_666_INSTALL_ZIP_FILE) 'install/pcoe/installer/release_win_x86/PCStop.exe' -d $(EETEMPDIR)
+	cd $(EETEMPDIR)/install/pcoe/installer ; tar cf - release_win_x86 | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer ; tar xf - )
+	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+	mkdir -p $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/resource
+	unzip -o $(UAP_RELEASE_780_12_INSTALL_ZIP_FILE) 'Policy\ Controller/*' -d $(EETEMPDIR)
+	cd $(EETEMPDIR)/Policy\ Controller ; tar cf - . | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/resource ; tar xf - )
+	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+	unzip -o $(ServerUAP_10_21_INSTALL_ZIP_FILE) -d $(EETEMPDIR)
+	cd $(EETEMPDIR) ; tar cf - . | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/resource ; tar xf - )
+	rm -rf $(EETEMPDIR) ; mkdir -p $(EETEMPDIR)
+	unzip -o $(XLIB_FATE_830_666_INSTALL_ZIP_FILE) 'install/pcoe/Install2015*' -d $(EETEMPDIR)/
+	cd $(EETEMPDIR)/install/pcoe/ ; tar cf - Install2015 | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer ; tar xf - )
+	cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/$(PRODUCT_DIR_NAME)/ ; tar cf - 'Script Files' | ( cd $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer ; tar xf - )
+	mkdir -p $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/artifacts
+	cp $(NLBUILDROOT)/config/app-icon.ico $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/resource
+	cp $(NLBUILDROOT)/config/NextLabs_Clickwrap_Agreement_v5-07.rtf $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/resource
+	cp $(NLBUILDROOT)/config/Exchangepep.xml $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/artifacts
+	cp $(NLBUILDROOT)/config/logcfg.xml $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/artifacts
+	cp $(NLBUILDROOT)/config/plugin.xml $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/artifacts
+	cp $(NLBUILDROOT)/install/deploy.ps1 $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/artifacts
+	cp $(NLBUILDROOT)/install/installagent.bat $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/artifacts
+	cp $(NLBUILDROOT)/install/uninstallagent.bat $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/artifacts
+# add by tonny to append some jar file that can't found from java folder
+	# cp $(NLBUILDROOT)/appendjlib/castor-0.9.5.4.jar $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java
+	# cp $(NLBUILDROOT)/appendjlib/commons-collections-2.1.1.jar $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java
+	# cp $(NLBUILDROOT)/appendjlib/commons-discovery-0.2.jar $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java	
+	# cp $(NLBUILDROOT)/appendjlib/ehcache-1.1.jar $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java
+	# cp $(NLBUILDROOT)/appendjlib/wsdl4j-1.5.1.jar $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java
+	cp $(NLBUILDROOT)/appendjlib/* $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/java
+#	mv $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/resource/logging.template.properties $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/resource/logging.properties  
+# end at here
+	mkdir -p $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/release_win_x64
+	cp $(NLBUILDROOT)/thirdpart/OpenXml/V2.5/lib/DocumentFormat.OpenXML.dll $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/release_win_x64
+	cp $(NLBUILDROOT)/thirdpart/log4net-1.2.13/bin/net/4.0/release/Log4net.dll $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/release_win_x64
+	cp $(NLBUILDROOT)/bin/release_win_x64/*.dll $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/release_win_x64
+	cp $(NLBUILDROOT)/bin/release_win_x64/*.exe $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/release_win_x64
+	mkdir -p $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/rmsjavasdk
+	cp -pfr $(NLBUILDROOT)/bin/rmsjavasdk/lib/ $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/rmsjavasdk/
+	cp $(NLBUILDROOT)/install/Scripts/ExchangeEnforcer/Install2015/oeinstca/bin/Win32/Release/oeinstca.dll $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/Install2015/oeinstca/bin/Win32/Release
+	cp $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/$(ISM_TEMPLATE_FILE_NAME_X64) $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/$(ISM_TEMPLATE_FILE_NAME_X64)
+	cd $(NLBUILDROOT)/ ; C:/Windows/syswow64/cscript.exe //nologo build/ISAutoGUIDVersion.js $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/installer/$(ISM_TEMPLATE_FILE_NAME_X64) $(VERSION_STR).$(BUILD_NUMBER)
+	chmod -R +w $(CURRENT_MKFILE_DIRPATH)/$(PRODUCT_DIR_NAME)/
+
+.PHONY: installer64
+installer64: assembly
+	@echo "INFO: Create 64-bit installer package"
+	'$(ISCMDBLD)' -x -r Media_MSI -p "$(ISM_FILE_DIR)/installer/$(ISM_TEMPLATE_FILE_NAME_X64)" -b "$(DEPLOY_DIR)"
+	@if [ $(OFFICIALCERT) -ne 0 ]; then \
+		echo "INFO: Signing $(MSI_FILE64) msi file" ; \
+		echo "'$(SIGNTOOL_OFFICIAL_TOOL)' $(SIGNTOOL_OFFICIAL_ARGS) $(OUTPUT_DIR)/CompliantEnterprisex64/Media_MSI/DiskImages/DISK1/$(MSI_FILE64)" ; \
+		'$(SIGNTOOL_OFFICIAL_TOOL)' $(SIGNTOOL_OFFICIAL_ARGS) $(OUTPUT_DIR)/CompliantEnterprisex64/Media_MSI/DiskImages/DISK1/$(MSI_FILE64) ; \
+	fi
+
+.PHONY: clean
+clean:
+	@rm -rf $(INSTALL_BUILD_DIR)
+
+.PHONY: publish
+publish:
+	@echo "INFO: Publish installer packages"
+	@if [ "$(MSI_FILE64)" != "" ]; then \
+		echo "INFO:   Create 64-bit installer package" ; \
+		mkdir -p $(PACKAGE64_DIR) ; \
+		cp $(NLBUILDROOT)/config/commprofile.template.xml $(PACKAGE64_DIR); \
+		cp $(NLBUILDROOT)/config/policymodel.bin $(PACKAGE64_DIR); \
+		cp -pf $(OUTPUT_DIR)/CompliantEnterprisex64/Media_MSI/DiskImages/DISK1/$(MSI_FILE64) $(PACKAGE64_DIR)/$(TARGETMSI_FILE64_NAME) ; \
+		cd $(PACKAGE64_DIR); zip ../$(PACKAGE_FILE64) * ; \
+	fi
+	mkdir -p $(PUBLISH_DIR)
+	cp -pf $(INSTALL_BUILD_DIR)/*.zip $(PUBLISH_DIR)
+	@echo "INFO:   Content of $(PUBLISH_DIR)"
+	@ls -al $(PUBLISH_DIR)
+
+.PHONY: archive
+archive:
+	@echo "INFO: archive pdb files"
+	mkdir -p $(ARCHIVE_DIR) ; \
+	cd '$(NLBUILDROOT)/bin/release_win_x64' ; \
+	zip '$(ARCHIVE_DIR)/$(ARCHIVE_FILE64)' *; \

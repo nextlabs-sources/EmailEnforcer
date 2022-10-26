@@ -1,0 +1,141 @@
+# Make file to publish pcv and release builds
+#
+# Installers and build artifacts are published to \\nextlabs.com\share\data\build\pcv
+# or \\nextlabs.com\share\data\build\release. Typically, \\nextlabs.com\share\data is mapped
+# to s:/.
+#
+# The following variables must be defined in commandline:
+#	VERSION_BUILD_SHORT
+#	BUILD_DATE
+#
+# Example:
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=pcv
+#	make -k -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=pcv installer_local
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=release
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=release spe2010_sync
+#	make -f Makefile.publish VERSION_BUILD_SHORT=10001 BUILD_DATE=20110501 TYPE=release archive_bin
+
+
+#
+# Check for errors
+#
+
+ifeq ($(NLBUILDROOT),)
+  $(error NLBUILDROOT undefined.)
+endif
+
+ifeq ($(VERSION_BUILD_SHORT),)
+  $(error VERSION_BUILD_SHORT undefined.)
+endif
+
+ifeq ($(BUILD_DATE),)
+  $(error BUILD_DATE undefined.)
+endif
+
+ifeq ($(TYPE),)
+  $(error TYPE undefined.)
+endif
+
+ifneq ($(TYPE), dev)
+ifneq ($(TYPE), pcv)
+ifneq ($(TYPE), release)
+  $(error Invalid TYPE $(TYPE).)
+endif
+endif
+endif
+
+ifeq ($(REPOSITORY_ROOT),)
+  $(error REPOSITORY_ROOT undefined.)
+endif
+
+ifeq ($(SYNC_FOLDER_ROOT),)
+  $(error SYNC_FOLDER_ROOT undefined.)
+endif
+
+
+#
+# Constants
+#
+
+include $(NLBUILDROOT)/build/Makefile.ver
+
+VERSION_STR_EE=$(VERSION_MAJOR_EE).$(VERSION_MINOR_EE).$(VERSION_MAINTENANCE_EE).$(VERSION_PATCH_EE)
+
+PUBLISH_BODA_EE_DIR=$(REPOSITORY_ROOT)/ExchangeEnforcer/$(TYPE)/$(VERSION_STR_EE)/$(VERSION_BUILD_SHORT)
+PUBLISH_BODA_ARTIFACT_DIR=$(REPOSITORY_ROOT)/artifacts/ExchangeEnforcer/$(TYPE)/$(VERSION_STR_EE)/$(VERSION_BUILD_SHORT)
+
+BUILD_MANIFEST_FILE_NAME=build.manifest
+
+TOP_BIN_DIR=$(NLBUILDROOT)/bin
+INSTALL_BUILD_EE_DIR=$(TOP_BIN_DIR)/installer
+ARCHIVE_DIR=$(TOP_BIN_DIR)/archive
+
+#
+# Info
+#
+
+$(info --------------------------------------------------------------)
+$(info [Build])
+$(info TYPE                       = $(TYPE)) 
+$(info VERSION_BUILD_SHORT        = $(VERSION_BUILD_SHORT)) 
+$(info BUILD_DATE                 = $(BUILD_DATE)) 
+$(info [Path])
+$(info PUBLISH_BODA_EE_DIR        = $(PUBLISH_BODA_EE_DIR)) 
+$(info PUBLISH_BODA_ARTIFACT_DIR  = $(PUBLISH_BODA_ARTIFACT_DIR))
+$(info TOP_BIN_DIR                = $(TOP_BIN_DIR)) 
+$(info INSTALL_BUILD_EE_DIR       = $(INSTALL_BUILD_EE_DIR))
+$(info ARCHIVE_DIR                = $(ARCHIVE_DIR))
+$(info [File])
+$(info ZIP_FILE_NAME_BIN          = $(ZIP_FILE_NAME_BIN)) 
+$(info --------------------------------------------------------------)
+$(info )
+
+
+#
+# Targets
+#
+
+.PHONY: all
+all: product archive
+
+.PHONY: product
+product: ee 
+
+.PHONY: ee
+ee:
+	@echo "INFO: Publishing ExchangeEnforcer Installer(s) to BODA..."
+	@if [ ! -d $(INSTALL_BUILD_EE_DIR) ]; then \
+		echo "ERROR: $(INSTALL_BUILD_EE_DIR) does not exist - did the package zip get created at all?" ; \
+		exit 1 ; \
+	fi
+	@mkdir -p $(PUBLISH_BODA_EE_DIR)
+	cp -pf $(INSTALL_BUILD_EE_DIR)/*.zip $(PUBLISH_BODA_EE_DIR)/
+	ls -l $(PUBLISH_BODA_EE_DIR)
+	@echo "[BUILD MANIFEST] Product Name         : $(VERSION_PRODUCT_EE)"
+	@echo "[BUILD MANIFEST]   Installer Location : $(PUBLISH_BODA_EE_DIR)"
+	@echo "[BUILD MANIFEST]   Installer Package  : $$(cd $(INSTALL_BUILD_EE_DIR); ls -1 *.zip | tr '\n' ' ')"
+
+.PHONY: archive
+archive:
+	@echo "INFO: Publishing archive files to artifacts directory"
+	@if [ ! -d $(ARCHIVE_DIR) ]; then \
+		echo "ERROR: $(ARCHIVE_DIR) does not exist" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_BODA_ARTIFACT_DIR) ]; then \
+		mkdir -p $(PUBLISH_BODA_ARTIFACT_DIR) ; \
+	fi
+	cp -pf $(ARCHIVE_DIR)/*.zip $(PUBLISH_BODA_ARTIFACT_DIR)/
+
+.PHONY: manifest
+manifest:
+	@echo "INFO: Publishing build-manifest to artifacts directory"
+	@if [ ! -f $(BUILD_MANIFEST_FILE_NAME) ]; then \
+		echo "ERROR: $(BUILD_MANIFEST_FILE_NAME) does not exist - did you execute createBuildManifest script?" ; \
+		exit 1 ; \
+	fi
+	@if [ ! -d $(PUBLISH_BODA_ARTIFACT_DIR) ]; then \
+		mkdir -p $(PUBLISH_BODA_ARTIFACT_DIR) ; \
+	fi
+	cp -pf $(NLBUILDROOT)/$(BUILD_MANIFEST_FILE_NAME) $(PUBLISH_BODA_ARTIFACT_DIR)/
+	ls -l $(PUBLISH_BODA_ARTIFACT_DIR)

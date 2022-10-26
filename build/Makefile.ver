@@ -1,0 +1,15 @@
+##
+# Product version information
+#
+# Description:
+#
+#	This file should be included in top-level Makefile
+#
+# http://sharepoint/sites/support/release/Lists/Current%20Releases/AllItems.aspx
+##
+
+VERSION_PRODUCT_EE			= Entitlement Manager for Microsoft Exchange Server
+VERSION_MAJOR_EE			= 2021
+VERSION_MINOR_EE			= 10
+VERSION_MAINTENANCE_EE		= 0
+VERSION_PATCH_EE			= 0

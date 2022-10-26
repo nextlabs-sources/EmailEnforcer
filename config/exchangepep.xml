@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <!--define this section will analysis with Exchange Enforcer-->
+  <configSections>
+    <section name="whiteList" type="RouteAgent.Common.whiteListSection,RouteAgent" />
+    <section name="supportExtensionNames" type="RouteAgent.Common.SupportExtensionNamesSection,RouteAgent" />
+  </configSections>
+
+  <appSettings>
+    <!--- exchange message tracing log path, if this not configured, we can't do enforce according to the client type-->
+    <add key="MessageTracingLogPath" value="C:\Program Files\Microsoft\Exchange Server\V15\TransportRoles\Logs\MessageTracking"/>
+    <!---define the behaviour when the exception happened. Optional value: "yes","no" default value is yes-->
+    <add key="DenyOnException" value="Yes"/>
+
+    <!-- define when exception happend, send Notify Mail to ExceptionNotifyTo default yes-->
+    <add key="NotifyWhenException" value="Yes"/>
+    <add key="ExceptionNotifyTo" value="administrator@example.com"/>
+    <add key="ExceptionNotifySubject" value="An exception happen when ExchangePEP processing email"/>
+    <add key="ExceptionNotifyBody" value="An exception had happen on Exchange Enforcer &lt;/br&gt;An exception is thrown , when mail's Subject:%s &lt;/br&gt;Sender: %f&lt;/br&gt;Recipient:%t&lt;/br&gt;ErrorMessage:%e" />
+    <add key="ExceptionNotifyAttachOriginEmail" value="Yes"/>
+
+    <!---define the sender information about the notify email for "email notify" obligation, can be set to any value-->
+    <add key="EmailNotifyObligatinSenderName" value="System Account"/>
+    <add key="EmailNotifyObligatinSenderEmailAddress" value="sa@example.com"/>
+    <!---define whether we process the email differently for each recipients. Optional value: "yes","no
+          "no": means if the email contains one more recipients, and we set policy to deny one and allow others. 
+            finally the email is denied for all recipients. Than 
+          "yes": means the email just be denied for recipients that the policy set.
+    -->
+    <add key="MultipleQueryLimite" value="200" />
+    <add key="RemoveRecipients" value="Yes" />
+    <add key="EnableEnforce" value="Yes" />
+    <add key="RecipientsLimited" value="5000" />
+    <add key="EmailHeaderFormat" value="Email-%c" />
+    <add key="SupportClientType" value="No" />
+    <add key="SupportHeaderKey" value="*" />
+    <add key="EmailHeaderMultiValueSplit" value="," />
+
+    <!-- User attr search scope -->
+    <add key="SearchUserAttrInForest" value="Yes" />
+  </appSettings>
+
+  <whiteList>
+    <senderList>
+      <address value="sa@example.com" />
+      <address value="inboundproxy@example.com" />
+    </senderList>
+
+    <headerList>
+      <header name="Company" value="example.com" />
+      <header name="Itar" value="Yes" />
+    </headerList>
+  </whiteList>
+
+  <supportExtensionNames>
+    <ExtensionName value="pdf"/>
+    <ExtensionName value="doc"/>
+    <ExtensionName value="docx"/>
+    <ExtensionName value="ppt"/>
+    <ExtensionName value="pptx"/>
+    <ExtensionName value="xls"/>
+    <ExtensionName value="xlsx"/>
+  </supportExtensionNames>
+</configuration>

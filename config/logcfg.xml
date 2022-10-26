@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<log4net>
+    <appender name="RollingFileAppender" type="log4net.Appender.RollingFileAppender">
+        <file value="C:\Program Files\NextLabs\Exchange Enforcer\logs\EE.log" />
+        <appendToFile value="true" />
+        <rollingStyle value="Size" />
+        <maximumFileSize value="20480KB" />
+        <maxSizeRollBackups value="10" />
+        <layout type="log4net.Layout.PatternLayout">
+            <conversionPattern value="[%p] [%t] [%d] [%r]  %m%n" />
+        </layout>
+    </appender>
+    <logger name="NLLogger">
+        <level value="WARN"/>
+        <appender-ref ref="RollingFileAppender" />
+    </logger>
+</log4net>

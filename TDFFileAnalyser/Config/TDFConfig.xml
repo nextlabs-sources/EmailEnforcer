@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<TDFConfig>
+  <MaxStartEffectiveXHeaderLength>2097152</MaxStartEffectiveXHeaderLength>
+  <MaxEndEffectiveXHeaderLength>1024</MaxEndEffectiveXHeaderLength>
+  <!-- default: classic, empty. 
+    classic: if do not config IngnoreNode, default ignore tdf:Base64BinaryPayload node
+    empty: if do not config IngnoreNode, default ignore nothing
+    if no this attribute or no IgnoreNodes node, using classic mode, ignore tdf:Base64BinaryPayload node
+  -->
+  <IgnoreNodes default="classic">
+    <!-- element: wholeNode, attribute, value -->
+    <IgnoreNode name="tdf:Base64BinaryPayload" element="value"/>
+  </IgnoreNodes>
+  <!-- using "," to split values and using "*" to support all files. If do not configured, only support xml extension files -->
+  <SupportExtensions>xml</SupportExtensions> 
+</TDFConfig>

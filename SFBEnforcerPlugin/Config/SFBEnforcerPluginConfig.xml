@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--All times below are in milliseconds-->
+<PluginConfig>
+  <EnforcerConfig>
+    <ResponseCheckHeartBeatMs>100</ResponseCheckHeartBeatMs>
+    <SingleRequestMaxTimeMs>60000</SingleRequestMaxTimeMs>
+    <IsDefaultBehaviorAllow>false</IsDefaultBehaviorAllow>
+    <IsSupportEvaMulMeetingInAnEmail>true</IsSupportEvaMulMeetingInAnEmail>
+    <SFBPolicyAssistantWebService>http://10.23.57.38:5858/NLAssistant/services/PolicyAssistant.asmx</SFBPolicyAssistantWebService>
+    <!-- define when exception happend, send Notify Mail to ExceptionNotifyTo default yes-->
+    <NotifyWhenDeny>Yes</NotifyWhenDeny>
+    <DenyNotifySubject>You have one email was denyed by Exchange Enforcer</DenyNotifySubject>
+    <DenyNotifyBody>You have one email was denyed by Exchange Enforcer&lt;/br&gt;when mail's Subject:%s &lt;/br&gt;Recipient:%t&lt;/br&gt;</DenyNotifyBody>
+    <DenyNotifyBodyWithException>An exception had happen on Exchange Enforcer &lt;/br&gt;An exception is thrown , when mail's Subject:%s &lt;/br&gt;Sender: %f&lt;/br&gt;Recipient:%t&lt;/br&gt;ErrorMessage:%e</DenyNotifyBodyWithException>
+    <DenyNotifyBodyWithNoClassification>You have not done the SFB meeting classification action, all recipients cannot receive the email! You can get the classify uri from SFB assistant in SFB.</DenyNotifyBodyWithNoClassification>
+    <DenyNotifyAttachOriginEmail>No</DenyNotifyAttachOriginEmail>
+    <NeedCombineTDFAttachmentXHeader>0</NeedCombineTDFAttachmentXHeader>
+  </EnforcerConfig>
+  <TDFConfig>
+    <MaxStartEffectiveXHeaderLength>2097152</MaxStartEffectiveXHeaderLength>
+    <MaxEndEffectiveXHeaderLength>1024</MaxEndEffectiveXHeaderLength>
+    <!-- default: classic, empty. 
+      classic: if do not config IngnoreNode, default ignore tdf:Base64BinaryPayload node
+      empty: if do not config IngnoreNode, default ignore nothing
+      if no this attribute or no IgnoreNodes node, using classic mode, ignore tdf:Base64BinaryPayload node
+    -->
+    <IgnoreNodes default="classic">
+      <!-- element: wholeNode, attribute, value -->
+      <IgnoreNode name="tdf:Base64BinaryPayload" element="value"/>
+    </IgnoreNodes>
+    <!-- using "," to split values and using "*" to support all files. If do not configured, only support xml extension files -->
+    <SupportExtensions>xml</SupportExtensions> 
+  </TDFConfig>
+</PluginConfig>
